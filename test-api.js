@@ -1,11 +1,19 @@
 /**
- * Test script for HBSA Application API - Spring 2026
- * Run with: node test-api.js
+ * Smoke test for the HBSA application API against a real Airtable base.
+ * Field-name mismatches are the only thing that reliably breaks here, and
+ * only a live call catches them.
+ *
+ *   1. npm run dev
+ *   2. set APPLICATION_CLOSED = false in src/lib/config.ts
+ *   3. node test-api.js
+ *   4. delete the two test rows from Airtable
  */
 
-const API_URL = 'http://localhost:3000/api/submit';
+const assert = require('node:assert')
 
-const testData = {
+const API_URL = 'http://localhost:3000/api/submit'
+
+const base = {
   basicInfo: {
     firstName: 'Test',
     lastName: 'User',
@@ -13,61 +21,63 @@ const testData = {
     graduatingYear: '2027',
     coreValue: 'I embody Question the Status Quo by challenging conventional thinking.'
   },
-  selectedCommittees: ['marketing', 'dei'],
-  committeeResponses: {
-    marketing: {
-      'workload': 'I prioritize tasks using the Eisenhower Matrix and set clear deadlines.',
-      'initiative': 'I would create a TikTok series featuring day-in-the-life content.',
-      'portfolio': 'https://example.com/portfolio'
-    },
-    dei: {
-      'meaning': 'DEI means creating spaces where everyone feels valued and can thrive.',
-      'inclusive-space': 'I organized a cultural celebration event at my community college.',
-      'contribution': 'I hope to bring new perspectives and learn from diverse experiences.'
-    }
-  },
-  generalResponses: {
-    whyJoinHBSA: 'I want to contribute to building a stronger Haas community.'
-  },
+  generalResponses: { whyJoinHBSA: 'I want to help build a stronger Haas community.' },
   resumeUrl: 'https://drive.google.com/file/d/test123/view'
-};
-
-async function testAPI() {
-  console.log('Testing HBSA Spring 2026 Application API...\n');
-  
-  try {
-    console.log('Sending test data...');
-    console.log('Data:', JSON.stringify(testData, null, 2));
-    
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(testData),
-    });
-    
-    const result = await response.json();
-    
-    console.log('\nResponse:');
-    console.log('Status:', response.status);
-    console.log('Data:', JSON.stringify(result, null, 2));
-    
-    if (response.ok && result.success) {
-      console.log('\n SUCCESS! Check your Google Sheet:');
-      console.log('https://docs.google.com/spreadsheets/d/199FoaFZSaPtOW251F6wsbxmJSS_Eg6MSmWOqvDNaGRM/edit');
-    } else {
-      console.log('\n FAILED!');
-      console.log('Error:', result.error);
-    }
-    
-  } catch (error) {
-    console.log('\n Test failed:', error.message);
-    console.log('\nMake sure:');
-    console.log('1. Dev server is running (npm run dev)');
-    console.log('2. Google Apps Script is deployed');
-    console.log('3. .env.local has the correct URL');
-  }
 }
 
-testAPI();
+const marketing = {
+  workload: 'I prioritize with the Eisenhower Matrix and set clear deadlines.',
+  initiative: 'A TikTok series featuring day-in-the-life content.',
+  portfolio: 'https://example.com/portfolio'
+}
+
+const cases = [
+  {
+    name: 'two committees',
+    payload: {
+      ...base,
+      selectedCommittees: ['marketing', 'dei'],
+      committeeResponses: {
+        marketing,
+        dei: {
+          meaning: 'Creating spaces where everyone feels valued and can thrive.',
+          'inclusive-space': 'I organized a cultural celebration at my community college.',
+          contribution: 'New perspectives, and a willingness to learn from others.'
+        }
+      }
+    }
+  },
+  {
+    // exercises the empty "Committee 2 Responses" branch
+    name: 'one committee',
+    payload: { ...base, selectedCommittees: ['marketing'], committeeResponses: { marketing } }
+  }
+]
+
+async function main() {
+  for (const { name, payload } of cases) {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const result = await response.json()
+
+    if (response.status === 410) {
+      console.log('Applications are closed — set APPLICATION_CLOSED = false to run this.')
+      return
+    }
+
+    assert.strictEqual(response.status, 200, `${name}: ${result.error ?? response.status}`)
+    assert.match(result.submissionId ?? '', /^rec/, `${name}: no Airtable record id returned`)
+    console.log(`ok  ${name} -> ${result.submissionId}`)
+  }
+  console.log('\nAll good. Delete the test rows from Airtable.')
+}
+
+main().catch(error => {
+  console.error('\nFAILED:', error.message)
+  console.error('Check: dev server running, AIRTABLE_TOKEN / AIRTABLE_BASE_ID set in .env.local,')
+  console.error('and the base has an "Applications" table with the 11 documented fields.')
+  process.exit(1)
+})

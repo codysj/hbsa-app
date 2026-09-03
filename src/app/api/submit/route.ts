@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { submitToGoogleSheets, FormSubmission, validateFileUrl } from '@/lib/googleSheets'
+import { submitToAirtable, FormSubmission, validateFileUrl } from '@/lib/airtable'
 import { APPLICATION_CLOSED } from '@/lib/config'
 
 export async function POST(request: NextRequest) {
@@ -23,10 +23,8 @@ export async function POST(request: NextRequest) {
     // Add submission timestamp
     formData.submittedAt = new Date().toISOString()
 
-    // Skip connection test to reduce delay - go straight to submission
-
-    // Submit to Google Sheets with enhanced error handling
-    const result = await submitToGoogleSheets(formData)
+    // Submit to Airtable
+    const result = await submitToAirtable(formData)
 
     if (result.success) {
       return NextResponse.json(

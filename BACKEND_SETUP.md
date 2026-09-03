@@ -1,120 +1,117 @@
-# HBSA Spring 2026 Backend Setup Guide
+# HBSA Backend Setup (Airtable)
 
-> **New:** For a full project overview (deploy, yearly updates, closing applications), start with the root **[README.md](./README.md)**.
+> For a full project overview, start with the root **[README.md](./README.md)**.
 
-## Quick Setup (5 minutes)
+Submissions go straight from `POST /api/submit` to the Airtable REST API. There is
+no Apps Script, no deployment step, and no spreadsheet to keep in sync.
 
-### Step 1: Create Google Spreadsheet
-1. Go to [Google Sheets](https://sheets.google.com)
-2. Create a new blank spreadsheet
-3. Name it **"HBSA Spring 2026 Applications"**
-4. Copy the **Spreadsheet ID** from the URL:
-   ```
-   https://docs.google.com/spreadsheets/d/[THIS_IS_YOUR_SPREADSHEET_ID]/edit
-   ```
+## Setup (5 minutes)
 
-### Step 2: Create Google Apps Script
-1. Go to [Google Apps Script](https://script.google.com)
-2. Click **"New Project"**
-3. Name it **"HBSA Spring 2026 Handler"**
-4. Delete the default code
-5. Open `google-apps-script-template.js` from this project
-6. Copy and paste the entire contents into Apps Script
-7. Replace `YOUR_SPREADSHEET_ID_HERE` with your actual Spreadsheet ID
-8. Click **Save** (Ctrl+S)
+### 1. Create the base and table
 
-### Step 3: Deploy as Web App
-1. Click **Deploy** → **New deployment**
-2. Click the gear icon ⚙️ → Select **"Web app"**
-3. Set these options:
-   - **Execute as:** Me
-   - **Who has access:** Anyone
-4. Click **Deploy**
-5. Click **Authorize access** and grant permissions
-6. **Copy the Web app URL** (looks like `https://script.google.com/macros/s/.../exec`)
+Create an Airtable base, name a table **`Applications`**, and give it these 11 fields.
+Names must match **exactly** — that is the only thing that can silently break.
 
-### Step 4: Update Environment Variable
-1. Open `.env.local` in your project root
-2. Update the Google Apps Script URL:
-   ```bash
-   NEXT_PUBLIC_GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-   ```
+| Field | Type |
+|---|---|
+| Submitted At | Date (include time) |
+| First Name | Single line text |
+| Last Name | Single line text |
+| Email | Email |
+| Graduating Year | Single line text |
+| Core Value | Long text |
+| Committees | Multiple select (leave options empty — they fill in on first submission) |
+| Why Join HBSA | Long text |
+| Resume URL | URL |
+| Committee 1 Responses | Long text |
+| Committee 2 Responses | Long text |
 
-### Step 5: Test the Setup
-1. In Google Apps Script, click **Run** → Select `testSetup`
-2. Grant permissions when prompted
-3. Check your Google Spreadsheet - a test row should appear
-4. If it works, you're done! Delete the test row if you want.
+Delete Airtable's default `Name` / `Notes` / `Assignee` / `Status` fields.
+
+### 2. Create a personal access token
+
+[airtable.com/create/tokens](https://airtable.com/create/tokens) → scope
+**`data.records:write`**, access limited to this base only. Copy the token — it is
+shown once.
+
+### 3. Get the base ID
+
+Open [airtable.com/api](https://airtable.com/api), pick the base; the ID starts with `app`.
+
+### 4. Set environment variables
+
+In `.env.local` (and in Vercel → Settings → Environment Variables):
+
+```bash
+AIRTABLE_TOKEN=pat...
+AIRTABLE_BASE_ID=app...
+# AIRTABLE_TABLE_NAME=Applications   # optional, this is the default
+```
+
+**No `NEXT_PUBLIC_` prefix.** That prefix inlines the value into the browser bundle,
+which would publish the token.
+
+### 5. Test
+
+```bash
+npm run dev
+node test-api.js
+```
+
+Set `APPLICATION_CLOSED = false` in `src/lib/config.ts` first, then delete the two
+test rows from Airtable when it passes.
+
+---
+
+## How the data is stored
+
+One row per applicant. An applicant picks up to two committees, and each choice's
+answers are written as a single formatted block:
+
+```
+Tech
+
+Q: What excites you most about working on the tech team, ...
+A: ...
+
+Q: If you could improve one part of HBSA's digital experience, ...
+A: ...
+```
+
+Question prompts are stored alongside the answers, so old records still read
+correctly after a question is reworded.
+
+**Why blocks instead of one field per question:** 14 committees × up to 4 questions
+is 43 fields, of which any single applicant fills at most 8. Blocks keep the base at
+11 fields that never change between semesters — `src/data/committees.ts` stays the
+only place questions are defined. At ~400 applicants a semester that also keeps you
+to ~400 records, which matters on Airtable's free plan (1,000 records per base).
+
+### Reviewing
+
+Make one view per committee, filtered on `Committees` **has any of** → that
+committee. No code, no per-semester maintenance.
+
+---
+
+## Updating for a new semester
+
+1. Edit committees and questions in **`src/data/committees.ts`** — that's it for the schema.
+2. Duplicate the `Applications` table (or the base) so cohorts don't mix, and point
+   `AIRTABLE_TABLE_NAME` / `AIRTABLE_BASE_ID` at the new one.
+3. Flip `APPLICATION_CLOSED` in `src/lib/config.ts` when the window opens and closes.
 
 ---
 
 ## Troubleshooting
 
-### "Script not found" or "Permission denied"
-- Make sure you deployed as a Web app with "Anyone" access
-- Make sure you're using the correct Web app URL (not the script URL)
+| Symptom | Cause |
+|---|---|
+| `422 UNKNOWN_FIELD_NAME` in server logs | A field name in the base doesn't match the table above |
+| `403` | Token lacks `data.records:write`, or isn't scoped to this base |
+| `404` | Wrong `AIRTABLE_BASE_ID`, or the table isn't named `Applications` |
+| `410` from `/api/submit` | `APPLICATION_CLOSED` is `true` in `src/lib/config.ts` |
+| Submissions succeed but rows don't appear | Checking the wrong base — a token can only write where it's scoped |
 
-### "Invalid form data"
-- Check browser console for detailed error messages
-- Verify all required fields are being sent
-
-### "Failed to write to spreadsheet"
-- Verify the SPREADSHEET_ID is correct
-- Make sure you have edit access to the spreadsheet
-
-### Test the API locally
-```bash
-npm run dev
-# Then submit a test application through the form
-```
-
----
-
-## Updating for Future Semesters
-
-When you need to set up for a new semester:
-
-1. **Create a new Google Spreadsheet** (or add a new sheet tab)
-2. **Update `google-apps-script-template.js`:**
-   - Change `SHEET_NAME` to the new semester (e.g., `HBSA_Fall_2026_Applications`)
-   - Update committee questions if they changed
-3. **Create a new Apps Script deployment** (or update existing)
-4. **Update `.env.local`** with the new URL if it changed
-
----
-
-## Data Structure
-
-| Column | Description |
-|--------|-------------|
-| Timestamp | When submitted |
-| Submission ID | Unique ID |
-| First Name | Applicant first name |
-| Last Name | Applicant last name |
-| Email | Applicant email |
-| Graduating Year | Expected graduation |
-| Core Value | Haas core value response |
-| First Committee | Primary committee choice |
-| Second Committee | Secondary committee choice |
-| Why Join HBSA | General question response |
-| Resume URL | Link to resume |
-| [Committee Questions] | Individual responses per committee |
-
----
-
-## Spring 2026 Committees
-
-The following committees are recruiting this semester:
-- Strategic Initiatives
-- Tech
-- Transfer Development
-- Marketing
-- DEI
-- Entrepreneurship
-- Sustainability
-- Corporate Relations
-- Integration
-- Sponsorships
-- Student Affairs
-- Public Service
-- SOAC (Student Organizations Advisory Council)
+Server logs (Vercel → project → Logs, or your terminal) carry the Airtable status
+code and response body for any failure.
