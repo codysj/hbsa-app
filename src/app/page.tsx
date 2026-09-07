@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { ClockIcon, UsersIcon, RocketLaunchIcon, XCircleIcon } from '@heroicons/react/24/outline'
-import { APPLICATION_CLOSED } from '@/lib/config'
+import { APPLICATION_CLOSED, SEMESTER, DEADLINE } from '@/lib/config'
 
 export default function Home() {
   
@@ -17,7 +17,7 @@ export default function Home() {
             </div>
                           <div className="text-right">
                 <p className="text-sm text-gray-500">UC Berkeley</p>
-                <p className="text-xs text-gray-400">Spring 2026 Applications</p>
+                <p className="text-xs text-gray-400">{SEMESTER} Applications</p>
               </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function Home() {
                     </p>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Spring 2026 applications have ended.
+                    {SEMESTER} applications have ended.
                   </p>
                 </>
               ) : (
@@ -133,7 +133,7 @@ export default function Home() {
                       Start Your Application
                     </a>
                     <p className="text-xs text-gray-500">
-                      Applications close February 8th at 11:59 PM
+                      Applications close {DEADLINE}
                     </p>
                   </div>
                 </>
@@ -148,7 +148,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="text-center space-y-4">
             <p className="text-sm text-gray-600">
-              © 2026 Haas Business Student Association. All rights reserved.
+              © {new Date().getFullYear()} Haas Business Student Association. All rights reserved.
             </p>
             <p className="text-xs text-gray-500">
               University of California, Berkeley • Haas School of Business

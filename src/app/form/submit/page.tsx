@@ -8,7 +8,7 @@ import { CheckIcon, ArrowLeftIcon, DocumentArrowUpIcon, UserGroupIcon, ChatBubbl
 import ResumeLinkInput from '@/components/ResumeLinkInput'
 import { useFormStore } from '@/store/formStore'
 import { committees } from '@/data/committees'
-import { APPLICATION_CLOSED } from '@/lib/config'
+import { APPLICATION_CLOSED, SEMESTER } from '@/lib/config'
 
 export default function SubmitPage() {
   const router = useRouter()
@@ -178,7 +178,7 @@ export default function SubmitPage() {
         <div className="max-w-4xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">HBSA Spring 2026 Associate Application</h1>
+              <h1 className="text-xl font-bold text-gray-900">HBSA {SEMESTER} Associate Application</h1>
               <p className="text-sm text-gray-600">Step {stepNumber} of {totalSteps}</p>
             </div>
             

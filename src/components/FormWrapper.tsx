@@ -3,6 +3,7 @@
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import Navigation from './Navigation'
+import { SEMESTER } from '@/lib/config'
 import AnimatedProgress from './AnimatedProgress'
 
 interface FormWrapperProps {
@@ -28,7 +29,7 @@ export default function FormWrapper({
           className="text-center mb-8"
         >
           <h1 className="text-4xl font-bold text-haasBlue mb-2">
-            HBSA Spring 2026 Associate Application
+            HBSA {SEMESTER} Associate Application
           </h1>
           <p className="text-haasText text-lg">
             Step {stepNumber} of {totalSteps}: {currentStep}

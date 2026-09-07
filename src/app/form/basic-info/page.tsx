@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRightIcon, ArrowLeftIcon, UserIcon, CalendarIcon, SparklesIcon, XCircleIcon } from '@heroicons/react/24/outline'
 import { useFormStore } from '@/store/formStore'
-import { APPLICATION_CLOSED } from '@/lib/config'
+import { APPLICATION_CLOSED, SEMESTER, GRADUATING_YEARS } from '@/lib/config'
 
 export default function BasicInfoPage() {
   const router = useRouter()
@@ -21,7 +21,7 @@ export default function BasicInfoPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Applications Are Closed</h1>
           <p className="text-gray-600 mb-6">
-            The deadline has passed. Spring 2026 applications are no longer accepted. Thank you for your interest in HBSA.
+            The deadline has passed. {SEMESTER} applications are no longer accepted. Thank you for your interest in HBSA.
           </p>
           <Link
             href="/"
@@ -34,7 +34,7 @@ export default function BasicInfoPage() {
     )
   }
 
-  const graduatingYears = ['2026', '2027', '2028', '2029']
+  const graduatingYears = GRADUATING_YEARS
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
@@ -77,7 +77,7 @@ export default function BasicInfoPage() {
         <div className="max-w-4xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">HBSA Spring 2026 Associate Application</h1>
+              <h1 className="text-xl font-bold text-gray-900">HBSA {SEMESTER} Associate Application</h1>
               <p className="text-sm text-gray-600">Step 1 of 4</p>
             </div>
             
