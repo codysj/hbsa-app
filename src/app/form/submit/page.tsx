@@ -154,11 +154,21 @@ export default function SubmitPage() {
               Application Submitted Successfully!
             </h1>
             
-            <p className="text-xl text-gray-600 leading-relaxed mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 leading-relaxed mb-4 max-w-2xl mx-auto">
               Thank you for your interest in HBSA. Your application has been recorded, and we&apos;ll be in touch about next steps.<br /><br />
               <span className="font-semibold text-primary-700">We don&apos;t send a confirmation email, so this screen is your confirmation.</span> You can safely close this page.
             </p>
-            
+
+            <p className="text-base text-gray-500 mb-8">
+              For further inquiries, please email{' '}
+              <a
+                href="mailto:info@berkeleyhbsa.org"
+                className="font-medium text-primary-700 hover:underline"
+              >
+                info@berkeleyhbsa.org
+              </a>
+            </p>
+
             <button
               onClick={() => router.push('/')}
               className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl shadow-large hover:shadow-glow transition-all duration-300"
