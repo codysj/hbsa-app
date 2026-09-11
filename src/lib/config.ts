@@ -4,7 +4,7 @@
  */
 
 /** Set to true to close applications and show "deadline passed" everywhere. */
-export const APPLICATION_CLOSED = true
+export const APPLICATION_CLOSED = false
 
 /** Shown in page titles and closed-application messaging. */
 export const SEMESTER = 'Fall 2026'
